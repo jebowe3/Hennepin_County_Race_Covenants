@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8' />
+  <title>Hennepin County Racial Restrictions, 1910 - 1955</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+  <!-- maplibre-gl.css here -->
+  <link href='https://unpkg.com/maplibre-gl@2.1.7/dist/maplibre-gl.css' rel='stylesheet' />
+  <!-- Rubik font -->
+  <link href="https://fonts.googleapis.com/css?family=Rubik&display=swap" rel="stylesheet">
+
+  <style>
+    /* basic css to style the viewer goes here */
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    /* set styles for the container holding the title and slider */
+    .session {
+      position: absolute;
+      z-index: 1;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 3px;
+      box-shadow: 0px 0px 0px 1px rgba(0, 0, 0, 0.3);
+      top: 10px;
+      left: 10px;
+      padding: 5px;
+      width: 233px;
+    }
+
+    /* set styles for the container holding the year legend */
+    .container {
+      display: table;
+      width: 100%;
+      margin: 0;
+    }
+
+    /* set font styles for the title */
+    h1 {
+      font-size: 20px;
+      font-family: 'Rubik', sans-serif;
+      padding-bottom: 0px;
+      padding-top: 0px;
+      font-weight: normal;
+    }
+
+    /* set font styles for the identified year */
+    h2 {
+      cursor: pointer;
+      font-size: 14px;
+      font-family: 'Rubik', sans-serif;
+      padding-bottom: 0px;
+      padding-top: 0px;
+      font-weight: normal;
+      width: 50%;
+      text-align: left;
+      display: table-cell;
+    }
+
+    /* define the slider width and change the cursor to a pointer on hover */
+    #slider {
+      cursor: pointer;
+      width: 230px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <!-- id the map div -->
+  <div id='map'></div>
+
+  <!-- title and time slider -->
+  <div class='session' id='sliderbar'>
+    <!-- the shown title of the map -->
+    <h1>Hennepin County Racial Restrictions, 1910 - 1955</h1>
+    <div class='container'>
+      <!-- the selected year -->
+      <h2>Year: <label id='active-year'>1955</label></h2>
+    </div>
+    <!-- the slider has a range from 1910 to 1955, intervals of 1 year, and an initial value of 1955 -->
+    <input id='slider' class='row' type='range' min='1910' max='1955' step='1' value='1955' />
+  </div>
+
+  <!-- maplibre-gl.js library -->
+  <script src='https://unpkg.com/maplibre-gl@2.1.7/dist/maplibre-gl.js'></script>
+
+  <!-- d3 js -->
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+
+  <script>
+    // javascript goes here
+
+    // define the initial slider-selected year
+    const initYear = parseInt(document.getElementById('slider').value);
+
+    console.log(initYear);
+
+    // update text in the UI
+    document.getElementById('active-year').innerText = initYear;
+
+    // your maptiler key
+    const key = 'X79IRuovndFj8moKWjAt'
+
+    // define the style.json for the vector tiles here
+    const style = 'https://api.maptiler.com/maps/positron/style.json?key=' + key
+
+    // define the map
+    const map = new maplibregl.Map({
+      container: 'map',
+      bounds: [[-93.7680030987,44.7851359282],[-93.1768402085,45.2466180557]], // the coordinate boundaries of Hennepin County
+      maxZoom: 16,
+      style: style
+    });
+
+    // add zoom and rotation controls to the map.
+    map.addControl(new maplibregl.NavigationControl());
+
+    // add a scale bar
+    map.addControl(new maplibregl.ScaleControl({
+      position: 'bottom-left',
+      unit: 'imperial' // you can change from imperial to metric, if desired
+    }));
+
+    // create a popup without adding to map
+    let popup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false
+    });
+
+    // define initial hover state
+    let hoveredStateId = null;
+
+    // when the map loads, call a function
+    map.on('load', () => {
+
+      // define incoming geojson data
+      const restr = d3.json('./data/Hennepin_County_Racial_Covenants.geojson');
+
+      // promise to wait until geojson files are loaded
+      Promise.all([restr]).then((data) => {
+
+        // define the data according to its order in object array
+        const restrictions = data[0];
+
+        // add the source to the map
+        map.addSource('restrictions', {
+          type: 'geojson',
+          data: restrictions // use our data as the data source
+        });
+        // add the GeoJSON data as a mapbox gl layer
+        map.addLayer({
+          'id': 'restrictions',
+          'type': 'fill',
+          'source': 'restrictions', // refers to source above
+          'layout': {},
+          "paint": {
+            "fill-color":[
+              'case',
+              ['boolean', ['feature-state', 'hover'], false],
+              'yellow',
+              'orange'
+            ],
+            "fill-opacity":0.5,
+            "fill-outline-color":'orange'
+          },
+          "filter": ['<=', ['number', ['get', 'Ex_Year']], initYear]
+        });
+
+      });
+
+    });
+
+    // fire a function on a mousemove and feed it the geojson we gave an id of 'restrictions'
+    map.on('mousemove','restrictions', (e) => {
+
+      // change the cursor style as a UI indicator.
+      map.getCanvas().style.cursor = 'pointer';
+
+      // reset the hover state id on mouse move so the layer knows when to change opacity
+      if (e.features.length > 0) {
+        if (hoveredStateId !== null) {
+          map.setFeatureState(
+            { source: 'restrictions', id: hoveredStateId },
+            { hover: false }
+          );
+        }
+        hoveredStateId = e.features[0].id;
+        map.setFeatureState(
+          { source: 'restrictions', id: hoveredStateId },
+          { hover: true }
+        );
+      }
+
+      // define the layer properties
+      // with "e.features[0].properties," you have access to all of the properties from the initial geojson layer
+      let props = e.features[0].properties;
+
+      // get the popup defined above
+      popup
+        .setLngLat(e.lngLat) // the location of the cursor
+        .setHTML('<b>' + props.Address + '</b><br>Addition: ' + props.Addition +
+                 '<br>Municipality: ' + props.City + '<br>Deed ID: ' + props.Deed_ID +
+                 '<br>Year Restricted: ' + props.Ex_Year) // feed the popup the prop info
+        .addTo(map) // add the popup to the map
+
+    });
+
+    // when you mouse off the layer...
+    map.on('mouseleave', 'restrictions', () => {
+
+      // change the cursor style back to initial setting
+      map.getCanvas().style.cursor = '';
+
+      // reset the hover state id
+      if (hoveredStateId !== null) {
+        map.setFeatureState(
+          { source: 'restrictions', id: hoveredStateId },
+          { hover: false }
+        );
+      }
+      hoveredStateId = null;
+
+      // and remove the popup
+      popup.remove();
+
+    });
+
+    // listen for a slider input
+    document.getElementById('slider').addEventListener('input', (event) => {
+
+      // define the newly-selected year
+      const year = parseInt(event.target.value);
+
+      // update text in the UI
+      document.getElementById('active-year').innerText = year;
+
+    });
+
+    // listen for a slider input
+    document.getElementById('slider').addEventListener('input', (event) => {
+
+      // define the newly-selected year
+      const year = parseInt(event.target.value);
+
+      // set a filter on the restrictions layer that tests if each feature's year is less than or equal to the year identified by the time slider
+      map.setFilter('restrictions', ['<=', ['number', ['get', 'Ex_Year']], year]);
+
+    });
+
+  </script>
+
+</body>
