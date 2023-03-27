@@ -216,12 +216,14 @@
 
       // define incoming geojson data
       const restr = d3.json('./data/Hennepin_County_Racial_Covenants.geojson');
+      const bndy = d3.json('./data/Hennepin_County.geojson');
 
       // promise to wait until geojson files are loaded
-      Promise.all([restr]).then((data) => {
+      Promise.all([restr, bndy]).then((data) => {
 
         // define the data according to its order in object array
         const restrictions = data[0];
+        const boundary = data[1];
 
         // add the source to the map
         map.addSource('restrictions', {
@@ -245,6 +247,24 @@
             "fill-outline-color":'orange'
           },
           "filter": ['<=', ['number', ['get', 'Ex_Year']], initYear]
+        });
+
+        // add the source to the map
+        map.addSource('boundary', {
+          type: 'geojson',
+          data: boundary // use our data as the data source
+        });
+        // add the GeoJSON data as a mapbox gl layer
+        map.addLayer({
+          'id': 'boundary',
+          'type': 'fill',
+          'source': 'boundary', // refers to source above
+          'layout': {},
+          "paint": {
+            "fill-color":'white',
+            "fill-opacity":0.0,
+            "fill-outline-color":'gray'
+          }
         });
 
       });
