@@ -8,6 +8,8 @@
 
   <!-- maplibre-gl.css here -->
   <link href='https://unpkg.com/maplibre-gl@2.1.7/dist/maplibre-gl.css' rel='stylesheet' />
+  <!-- jQuery message box css -->
+  <link href='https://cdn.jsdelivr.net/npm/gasparesganga-jquery-message-box@3.2.2/dist/messagebox.min.css' rel='stylesheet' />
   <!-- Rubik font -->
   <link href="https://fonts.googleapis.com/css?family=Rubik&display=swap" rel="stylesheet">
 
@@ -67,10 +69,66 @@
       display: table-cell;
     }
 
+    /* for the info button */
+    #infobutton {
+      cursor: pointer;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 3px;
+      font: 12px 'Rubik', sans-serif;
+      padding-top: 0px;
+      padding-bottom: 1px;
+      text-align: right;
+      display: table-cell;
+    }
+
     /* define the slider width and change the cursor to a pointer on hover */
     #slider {
       cursor: pointer;
       width: 230px;
+    }
+
+    /* for portable devices */
+    @media only screen and (max-width:950px) {
+      .container {
+        display: table;
+        width: 100%;
+        margin: 0;
+      }
+      h1 {
+        font-size: 0.8em;
+        font-family: 'Rubik', sans-serif;
+        padding-bottom: 0px;
+        padding-top: 0px;
+        font-weight: normal;
+      }
+      h2 {
+        font-size: 0.7em;
+        font-family: 'Rubik', sans-serif;
+        padding-bottom: 0px;
+        padding-top: 0px;
+        font-weight: normal;
+        width: 50%;
+        text-align: left;
+        display: table-cell;
+      }
+      #infobutton {
+        cursor: pointer;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 3px;
+        font: 0.65em 'Rubik', sans-serif;
+        padding-top: 0px;
+        padding-bottom: 1px;
+        text-align: right;
+        display: table-cell;
+      }
+      #slider {
+        cursor: pointer;
+        width: 16.5em;
+      }
+      /* hide the scale bar */
+      .maplibregl-ctrl-scale {
+        visibility: hidden;
+      }
     }
   </style>
 
@@ -88,6 +146,8 @@
     <div class='container'>
       <!-- the selected year -->
       <h2>Year: <label id='active-year'>1955</label></h2>
+      <!-- the info button -->
+      <button id='infobutton' onclick="buttonFunction()">About the Map</button><br>
     </div>
     <!-- the slider has a range from 1910 to 1955, intervals of 1 year, and an initial value of 1955 -->
     <input id='slider' class='row' type='range' min='1910' max='1955' step='1' value='1955' />
@@ -95,7 +155,10 @@
 
   <!-- maplibre-gl.js library -->
   <script src='https://unpkg.com/maplibre-gl@2.1.7/dist/maplibre-gl.js'></script>
-
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <!-- jQuery message box js -->
+  <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-message-box@3.2.2/dist/messagebox.min.js"></script>
   <!-- d3 js -->
   <script src="https://d3js.org/d3.v6.min.js"></script>
 
@@ -104,8 +167,6 @@
 
     // define the initial slider-selected year
     const initYear = parseInt(document.getElementById('slider').value);
-
-    console.log(initYear);
 
     // update text in the UI
     document.getElementById('active-year').innerText = initYear;
@@ -119,7 +180,7 @@
     // define the map
     const map = new maplibregl.Map({
       container: 'map',
-      bounds: [[-93.7680030987,44.7851359282],[-93.1768402085,45.2466180557]], // the coordinate boundaries of Hennepin County
+      bounds: [[-93.766495,44.845448],[-92.879506,45.181516]], // the coordinate boundaries
       maxZoom: 16,
       style: style
     });
@@ -141,6 +202,14 @@
 
     // define initial hover state
     let hoveredStateId = null;
+
+    function buttonFunction() {
+      // Information about this map
+      $.MessageBox({
+          buttonDone  : "Okay",
+          message     : "<b>About the map:</b><br><br>Restrictions data for Hennepin County was compiled by the Mapping Prejudice Project and shows the location of racial covenants recorded in Hennepin County between 1910 and 1955.  For the original data set, and further description, go to https://conservancy.umn.edu/handle/11299/217209.  Research on restrictions in Ramsey County (St. Paul) is ongoing, and will be added to this map when the data collection is complete.  Hennepin County data is extracted from individual deeds and all restrictions are shown as “subdivision” based."
+      });
+    }
 
     // when the map loads, call a function
     map.on('load', () => {
