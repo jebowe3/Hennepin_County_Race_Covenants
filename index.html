@@ -262,9 +262,19 @@
           'source': 'boundary', // refers to source above
           'layout': {},
           "paint": {
-            "fill-color":'white',
-            "fill-opacity":0.0,
-            "fill-outline-color":'gray'
+            "fill-color":"gray",
+            "fill-opacity": 0.0
+          }
+        });
+        // Add a gray outline around the polygon.
+        map.addLayer({
+          'id': 'outline',
+          'type': 'line',
+          'source': 'boundary',
+          'layout': {},
+          'paint': {
+            'line-color': 'gray',
+            'line-width': 2
           }
         });
 
